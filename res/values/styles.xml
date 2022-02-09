@@ -16,11 +16,18 @@
 
 <resources>
 
-    <style name="Theme.Material.Settings.Floating" parent="@android:style/Theme.Material.Settings">
+    <style name="Theme.Material.Settings.Floating" parent="@android:style/Theme.DeviceDefault.Settings">
         <item name="android:windowIsFloating">true</item>
         <item name="android:windowCloseOnTouchOutside">false</item>
         <item name="android:colorBackgroundCacheHint">@null</item>
         <item name="android:backgroundDimEnabled">true</item>
+        <item name="android:forceDarkAllowed">true</item>
+    </style>
+
+    <style name="Theme.Material.Dialog.DarkAllowed" parent="@*android:style/Theme.DeviceDefault.Dialog.Alert.DayNight"/>
+
+    <style name="bluetooth_opp_launcher" parent="Theme.Material.Dialog.DarkAllowed">
+        <item name="android:windowCloseOnTouchOutside">false</item>
     </style>
 
     <style name="file_transfer_item_label">

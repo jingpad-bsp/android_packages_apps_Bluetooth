@@ -132,14 +132,18 @@ public class A2dpService extends ProfileService {
         }
 
         // Step 7: Setup broadcast receivers
-        IntentFilter filter = new IntentFilter();
-        filter.addAction(BluetoothDevice.ACTION_BOND_STATE_CHANGED);
-        mBondStateChangedReceiver = new BondStateChangedReceiver();
-        registerReceiver(mBondStateChangedReceiver, filter);
-        filter = new IntentFilter();
-        filter.addAction(BluetoothA2dp.ACTION_CONNECTION_STATE_CHANGED);
-        mConnectionStateChangedReceiver = new ConnectionStateChangedReceiver();
-        registerReceiver(mConnectionStateChangedReceiver, filter);
+        if(mBondStateChangedReceiver == null) {
+            IntentFilter filter = new IntentFilter();
+            filter.addAction(BluetoothDevice.ACTION_BOND_STATE_CHANGED);
+            mBondStateChangedReceiver = new BondStateChangedReceiver();
+            registerReceiver(mBondStateChangedReceiver, filter);
+        }
+        if(mConnectionStateChangedReceiver == null) {
+            IntentFilter filter = new IntentFilter();
+            filter.addAction(BluetoothA2dp.ACTION_CONNECTION_STATE_CHANGED);
+            mConnectionStateChangedReceiver = new ConnectionStateChangedReceiver();
+            registerReceiver(mConnectionStateChangedReceiver, filter);
+        }
 
         // Step 8: Mark service as started
         setA2dpService(this);
@@ -165,10 +169,14 @@ public class A2dpService extends ProfileService {
         setA2dpService(null);
 
         // Step 7: Unregister broadcast receivers
-        unregisterReceiver(mConnectionStateChangedReceiver);
-        mConnectionStateChangedReceiver = null;
-        unregisterReceiver(mBondStateChangedReceiver);
-        mBondStateChangedReceiver = null;
+        if(mConnectionStateChangedReceiver != null) {
+            unregisterReceiver(mConnectionStateChangedReceiver);
+            mConnectionStateChangedReceiver = null;
+        }
+        if(mBondStateChangedReceiver != null) {
+            unregisterReceiver(mBondStateChangedReceiver);
+            mBondStateChangedReceiver = null;
+        }
 
         // Step 6: Cleanup native interface
         mA2dpNativeInterface.cleanup();

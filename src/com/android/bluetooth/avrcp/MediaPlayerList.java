@@ -173,8 +173,16 @@ public class MediaPlayerList {
                 List<android.media.session.MediaController> controllers =
                         mMediaSessionManager.getActiveSessions(null);
 
-                for (android.media.session.MediaController controller : controllers) {
-                    addMediaPlayer(controller);
+                HashSet<String> addedPackages = new HashSet<String>();
+
+                for (int i = 0; i < controllers.size(); i++) {
+                    Log.d(TAG, "init: controller: " + controllers.get(i).getPackageName());
+                    if (addedPackages.contains(controllers.get(i).getPackageName())) {
+                        continue;
+                    }
+
+                    addedPackages.add(controllers.get(i).getPackageName());
+                    addMediaPlayer(controllers.get(i));
                 }
 
                 // If there were any active players and we don't already have one due to the Media
@@ -189,6 +197,7 @@ public class MediaPlayerList {
         mMediaSessionManager.removeOnActiveSessionsChangedListener(mActiveSessionsChangedListener);
         mMediaSessionManager.setCallback(null, null);
         mMediaSessionManager = null;
+        mCallback = null;
 
         mMediaPlayerIds.clear();
 
@@ -196,6 +205,8 @@ public class MediaPlayerList {
             player.cleanup();
         }
         mMediaPlayers.clear();
+        mActivePlayerId = NO_ACTIVE_PLAYER;
+        d("MediaPlayers cleanup");
 
         if (mBrowsablePlayerConnector != null) {
             mBrowsablePlayerConnector.cleanup();

@@ -361,6 +361,17 @@ class ActiveDeviceManager {
 
         @Override
         public void onAudioDevicesRemoved(AudioDeviceInfo[] removedDevices) {
+            Log.d(TAG, "onAudioDevicesRemoved()");
+            if (mAudioManager.isWiredHeadsetOn()) {
+                return;
+            }
+            for (AudioDeviceInfo device : removedDevices) {
+                Log.d(TAG, "onAudioDevicesRemoved: removedDevices: " + device.getType());
+                if (isWiredAudioHeadset(device)) {
+                    setA2dpActiveDevice();
+                    break;
+                }
+            }
         }
     }
 
@@ -420,6 +431,14 @@ class ActiveDeviceManager {
         return mHandlerThread.getLooper();
     }
 
+    private void setA2dpActiveDevice() {
+        Log.d(TAG, "setA2dpActiveDevice()");
+        if (mA2dpActiveDevice == null && !mA2dpConnectedDevices.isEmpty()) {
+           int prevActiveDeviceIndex = mA2dpConnectedDevices.size() - 1;
+           BluetoothDevice prevActiveDevice = mA2dpConnectedDevices.get(prevActiveDeviceIndex);
+           setA2dpActiveDevice(prevActiveDevice);
+        }
+    }
     private void setA2dpActiveDevice(BluetoothDevice device) {
         if (DBG) {
             Log.d(TAG, "setA2dpActiveDevice(" + device + ")");

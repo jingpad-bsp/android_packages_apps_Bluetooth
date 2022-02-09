@@ -68,6 +68,7 @@
     <uses-permission android:name="android.permission.MODIFY_AUDIO_ROUTING" />
     <uses-permission android:name="android.permission.UPDATE_DEVICE_STATS" />
     <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" />
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>
 
     <uses-sdk android:minSdkVersion="14"/>
 
@@ -142,12 +143,14 @@
         </receiver>
         <activity android:name=".opp.BluetoothOppLauncherActivity"
             android:process="@string/process"
-            android:theme="@android:style/Theme.Material.Light.Dialog"
+            android:theme="@style/bluetooth_opp_launcher"
             android:label="@string/bt_share_picker_label"
             android:enabled="@bool/profile_supported_opp">
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />
                 <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="*/*" />
+                <!-- UNISOC: 1072398  Send all types.
                 <data android:mimeType="image/*" />
                 <data android:mimeType="video/*" />
                 <data android:mimeType="audio/*" />
@@ -166,14 +169,18 @@
                 <data android:mimeType="application/vnd.openxmlformats-officedocument.wordprocessingml.document" />
                 <data android:mimeType="application/vnd.openxmlformats-officedocument.presentationml.presentation" />
                 <data android:mimeType="application/x-hwp" />
+                -->
             </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.SEND_MULTIPLE" />
                 <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="*/*" />
+                <!-- UNISOC: 1072398  Send all types.
                 <data android:mimeType="image/*" />
                 <data android:mimeType="video/*" />
                 <data android:mimeType="x-mixmedia/*" />
                 <data android:mimeType="text/x-vcard" />
+                -->
             </intent-filter>
             <intent-filter>
                 <action android:name="android.btopp.intent.action.OPEN" />
@@ -184,18 +191,18 @@
         <activity android:name=".opp.BluetoothOppBtEnableActivity"
                   android:process="@string/process"
                   android:excludeFromRecents="true"
-                  android:theme="@android:style/Theme.Material.Light.Dialog.Alert"
+                  android:theme="@style/Theme.Material.Dialog.DarkAllowed"
                   android:enabled="@bool/profile_supported_opp">
         </activity>
         <activity android:name=".opp.BluetoothOppBtErrorActivity"
                   android:process="@string/process"
                   android:excludeFromRecents="true"
-                  android:theme="@android:style/Theme.Material.Light.Dialog.Alert">
+                  android:theme="@style/Theme.Material.Dialog.DarkAllowed">
         </activity>
         <activity android:name=".opp.BluetoothOppBtEnablingActivity"
                   android:process="@string/process"
                   android:excludeFromRecents="true"
-                  android:theme="@android:style/Theme.Material.Light.Dialog.Alert"
+                  android:theme="@style/Theme.Material.Dialog.DarkAllowed"
                   android:enabled="@bool/profile_supported_opp">
         </activity>
         <activity android:name=".opp.BluetoothOppIncomingFileConfirmActivity"
@@ -207,7 +214,7 @@
         <activity android:name=".opp.BluetoothOppTransferActivity"
                   android:process="@string/process"
                   android:excludeFromRecents="true"
-                  android:theme="@android:style/Theme.Material.Light.Dialog.Alert"
+                  android:theme="@style/Theme.Material.Dialog.DarkAllowed"
                   android:enabled="@bool/profile_supported_opp">
         </activity>
         <activity android:name=".opp.BluetoothOppTransferHistory"

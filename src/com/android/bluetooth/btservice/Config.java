@@ -16,10 +16,12 @@
 
 package com.android.bluetooth.btservice;
 
+import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothProfile;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.res.Resources;
+import android.os.SystemProperties;
 import android.provider.Settings;
 import android.util.FeatureFlagUtils;
 import android.util.Log;
@@ -47,6 +49,7 @@ import java.util.ArrayList;
 
 public class Config {
     private static final String TAG = "AdapterServiceConfig";
+    private static final String NEWAVRCP_ENABLE_PROPERTY = "persist.bluetooth.enablenewavrcp";
 
     private static class ProfileConfig {
         Class mClass;
@@ -63,13 +66,11 @@ public class Config {
     /**
      * List of profile services with the profile-supported resource flag and bit mask.
      */
-    private static final ProfileConfig[] PROFILE_SERVICES_AND_FLAGS = {
+    private static final ProfileConfig[] PROFILE_SRC_SERVICES_AND_FLAGS = {
             new ProfileConfig(HeadsetService.class, R.bool.profile_supported_hs_hfp,
                     (1 << BluetoothProfile.HEADSET)),
             new ProfileConfig(A2dpService.class, R.bool.profile_supported_a2dp,
                     (1 << BluetoothProfile.A2DP)),
-            new ProfileConfig(A2dpSinkService.class, R.bool.profile_supported_a2dp_sink,
-                    (1 << BluetoothProfile.A2DP_SINK)),
             new ProfileConfig(HidHostService.class, R.bool.profile_supported_hid_host,
                     (1 << BluetoothProfile.HID_HOST)),
             new ProfileConfig(PanService.class, R.bool.profile_supported_pan,
@@ -78,10 +79,35 @@ public class Config {
                     (1 << BluetoothProfile.GATT)),
             new ProfileConfig(BluetoothMapService.class, R.bool.profile_supported_map,
                     (1 << BluetoothProfile.MAP)),
-            new ProfileConfig(HeadsetClientService.class, R.bool.profile_supported_hfpclient,
-                    (1 << BluetoothProfile.HEADSET_CLIENT)),
             new ProfileConfig(AvrcpTargetService.class, R.bool.profile_supported_avrcp_target,
                     (1 << BluetoothProfile.AVRCP)),
+            new ProfileConfig(SapService.class, R.bool.profile_supported_sap,
+                    (1 << BluetoothProfile.SAP)),
+            new ProfileConfig(HidDeviceService.class, R.bool.profile_supported_hid_device,
+                    (1 << BluetoothProfile.HID_DEVICE)),
+            new ProfileConfig(BluetoothOppService.class, R.bool.profile_supported_opp,
+                    (1 << BluetoothProfile.OPP)),
+            new ProfileConfig(BluetoothPbapService.class, R.bool.profile_supported_pbap,
+                    (1 << BluetoothProfile.PBAP)),
+            new ProfileConfig(HearingAidService.class,
+                    com.android.internal.R.bool.config_hearing_aid_profile_supported,
+                    (1 << BluetoothProfile.HEARING_AID))
+    };
+
+    /**
+     * List of profile services with the profile-supported resource flag and bit mask.
+     */
+    private static final ProfileConfig[] PROFILE_SINK_SERVICES_AND_FLAGS = {
+            new ProfileConfig(A2dpSinkService.class, R.bool.profile_supported_a2dp_sink,
+                    (1 << BluetoothProfile.A2DP_SINK)),
+            new ProfileConfig(HidHostService.class, R.bool.profile_supported_hid_host,
+                    (1 << BluetoothProfile.HID_HOST)),
+            new ProfileConfig(PanService.class, R.bool.profile_supported_pan,
+                    (1 << BluetoothProfile.PAN)),
+            new ProfileConfig(GattService.class, R.bool.profile_supported_gatt,
+                    (1 << BluetoothProfile.GATT)),
+            new ProfileConfig(HeadsetClientService.class, R.bool.profile_supported_hfpclient,
+                    (1 << BluetoothProfile.HEADSET_CLIENT)),
             new ProfileConfig(AvrcpControllerService.class,
                     R.bool.profile_supported_avrcp_controller,
                     (1 << BluetoothProfile.AVRCP_CONTROLLER)),
@@ -95,8 +121,6 @@ public class Config {
                     (1 << BluetoothProfile.HID_DEVICE)),
             new ProfileConfig(BluetoothOppService.class, R.bool.profile_supported_opp,
                     (1 << BluetoothProfile.OPP)),
-            new ProfileConfig(BluetoothPbapService.class, R.bool.profile_supported_pbap,
-                    (1 << BluetoothProfile.PBAP)),
             new ProfileConfig(HearingAidService.class,
                     com.android.internal.R.bool.config_hearing_aid_profile_supported,
                     (1 << BluetoothProfile.HEARING_AID))
@@ -113,8 +137,16 @@ public class Config {
             return;
         }
 
-        ArrayList<Class> profiles = new ArrayList<>(PROFILE_SERVICES_AND_FLAGS.length);
-        for (ProfileConfig config : PROFILE_SERVICES_AND_FLAGS) {
+        int btMode = BluetoothAdapter.getDefaultAdapter().getBluetoothMode();
+        Log.d(TAG, "btmode = " + btMode);
+        if (btMode == BluetoothAdapter.BT_MODE_SLAVE) {
+            SystemProperties.set(NEWAVRCP_ENABLE_PROPERTY, Boolean.toString(false));
+        } else {
+            SystemProperties.set(NEWAVRCP_ENABLE_PROPERTY, Boolean.toString(true));
+        }
+        ProfileConfig[] startProfiles = getSupportProfileByBtMode();
+        ArrayList<Class> profiles = new ArrayList<>(startProfiles.length);
+        for (ProfileConfig config : startProfiles) {
             boolean supported = resources.getBoolean(config.mSupported);
 
             if (!supported && (config.mClass == HearingAidService.class) && FeatureFlagUtils
@@ -136,7 +168,8 @@ public class Config {
     }
 
     private static long getProfileMask(Class profile) {
-        for (ProfileConfig config : PROFILE_SERVICES_AND_FLAGS) {
+        ProfileConfig[] supportProfiles = getSupportProfileByBtMode();
+        for (ProfileConfig config : supportProfiles) {
             if (config.mClass == profile) {
                 return config.mMask;
             }
@@ -159,5 +192,14 @@ public class Config {
                 Settings.Global.getLong(resolver, Settings.Global.BLUETOOTH_DISABLED_PROFILES, 0);
 
         return (disabledProfilesBitMask & profileMask) != 0;
+    }
+
+    private static ProfileConfig[] getSupportProfileByBtMode() {
+        ProfileConfig[] supportProfiles = PROFILE_SRC_SERVICES_AND_FLAGS;
+        int btMode = BluetoothAdapter.getDefaultAdapter().getBluetoothMode();
+        if (btMode == BluetoothAdapter.BT_MODE_SLAVE) {
+            supportProfiles = PROFILE_SINK_SERVICES_AND_FLAGS;
+        }
+        return supportProfiles;
     }
 }

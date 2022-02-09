@@ -244,6 +244,12 @@ public class AvrcpControllerService extends ProfileService {
         }
 
         @Override
+        public void sendPassThroughCmd(BluetoothDevice device, int keyCode, int keyState) {
+            Log.w(TAG, "sendPassThroughCmd not implemented");
+            return;
+        }
+
+        @Override
         public void sendGroupNavigationCmd(BluetoothDevice device, int keyCode, int keyState) {
             Log.w(TAG, "sendGroupNavigationCmd not implemented");
             return;

@@ -393,7 +393,11 @@ public class AdapterService extends Service {
         mAdapterProperties = new AdapterProperties(this);
         mAdapterStateMachine = AdapterState.make(this);
         mJniCallbacks = new JniCallbacks(this, mAdapterProperties);
-        initNative(isGuest(), isSingleUserMode());
+
+        // Android TV doesn't show consent dialogs for just works and encryption only le pairing
+        boolean isAtvDevice = getApplicationContext().getPackageManager().hasSystemFeature(
+                PackageManager.FEATURE_LEANBACK_ONLY);
+        initNative(isGuest(), isSingleUserMode(), isAtvDevice);
         mNativeAvailable = true;
         mCallbacks = new RemoteCallbackList<IBluetoothCallback>();
         mAppOps = getSystemService(AppOpsManager.class);
@@ -2233,6 +2237,12 @@ public class AdapterService extends Service {
             return false;
         }
 
+        if (pinCode.length != len) {
+            android.util.EventLog.writeEvent(0x534e4554, "139287605", -1,
+                    "PIN code length mismatch");
+            return false;
+        }
+
         StatsLog.write(StatsLog.BLUETOOTH_BOND_STATE_CHANGED,
                 obfuscateAddress(device), 0, device.getType(),
                 BluetoothDevice.BOND_BONDING,
@@ -2246,6 +2256,12 @@ public class AdapterService extends Service {
         enforceCallingOrSelfPermission(BLUETOOTH_PERM, "Need BLUETOOTH permission");
         DeviceProperties deviceProp = mRemoteDevices.getDeviceProperties(device);
         if (deviceProp == null || deviceProp.getBondState() != BluetoothDevice.BOND_BONDING) {
+            return false;
+        }
+
+        if (passkey.length != len) {
+            android.util.EventLog.writeEvent(0x534e4554, "139287605", -1,
+                    "Passkey length mismatch");
             return false;
         }
 
@@ -2302,6 +2318,8 @@ public class AdapterService extends Service {
     }
 
     boolean setPhonebookAccessPermission(BluetoothDevice device, int value) {
+        enforceCallingOrSelfPermission(BLUETOOTH_PRIVILEGED,
+                "Need BLUETOOTH PRIVILEGED permission");
         SharedPreferences pref = getSharedPreferences(PHONEBOOK_ACCESS_PERMISSION_PREFERENCE_FILE,
                 Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = pref.edit();
@@ -2875,10 +2893,16 @@ public class AdapterService extends Service {
         return obfuscateAddressNative(Utils.getByteAddress(device));
     }
 
+    public boolean setProfileState(String address, int profile,boolean state) {
+        if(address == null) {
+            return false;
+        }
+        return setProfileStateNative(Utils.getBytesFromAddress(address), profile, state);
+    }
     static native void classInitNative();
 
-    native boolean initNative(boolean startRestricted, boolean isSingleUserMode);
-
+    native boolean initNative(boolean startRestricted, boolean isSingleUserMode,
+            boolean isAtvDevice);
     native void cleanupNative();
 
     /*package*/
@@ -2959,6 +2983,8 @@ public class AdapterService extends Service {
     private native void interopDatabaseAddNative(int feature, byte[] address, int length);
 
     private native byte[] obfuscateAddressNative(byte[] address);
+
+    native boolean setProfileStateNative(byte[] address,int profile,boolean state);
 
     // Returns if this is a mock object. This is currently used in testing so that we may not call
     // System.exit() while finalizing the object. Otherwise GC of mock objects unfortunately ends up

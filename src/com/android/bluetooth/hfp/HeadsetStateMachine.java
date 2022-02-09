@@ -38,6 +38,7 @@ import android.util.StatsLog;
 import com.android.bluetooth.btservice.AdapterService;
 import com.android.bluetooth.btservice.ProfileService;
 import com.android.internal.annotations.VisibleForTesting;
+import com.android.bluetooth.Utils;
 import com.android.internal.util.State;
 import com.android.internal.util.StateMachine;
 
@@ -73,7 +74,7 @@ import java.util.Scanner;
 @VisibleForTesting
 public class HeadsetStateMachine extends StateMachine {
     private static final String TAG = "HeadsetStateMachine";
-    private static final boolean DBG = false;
+    private static final boolean DBG = Utils.isDebug();
 
     private static final String HEADSET_NAME = "bt_headset_name";
     private static final String HEADSET_NREC = "bt_headset_nrec";
@@ -1411,7 +1412,12 @@ public class HeadsetStateMachine extends StateMachine {
      */
     @VisibleForTesting
     public synchronized int getConnectionState() {
-        HeadsetStateBase state = (HeadsetStateBase) getCurrentState();
+        HeadsetStateBase state = null;
+        try {
+            state = (HeadsetStateBase) getCurrentState();
+        } catch (ArrayIndexOutOfBoundsException e) {
+            Log.e(TAG, "getConnectionState occurs Exception", e);
+        }
         if (state == null) {
             return BluetoothHeadset.STATE_DISCONNECTED;
         }

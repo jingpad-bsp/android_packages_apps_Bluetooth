@@ -27,7 +27,6 @@ import android.net.ConnectivityManager;
 import android.net.InterfaceConfiguration;
 import android.net.LinkAddress;
 import android.net.NetworkUtils;
-import android.os.Binder;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.INetworkManagementService;
@@ -35,6 +34,7 @@ import android.os.Message;
 import android.os.ServiceManager;
 import android.os.UserManager;
 import android.util.Log;
+import android.os.SystemProperties;
 
 import com.android.bluetooth.BluetoothMetricsProto;
 import com.android.bluetooth.Utils;
@@ -54,7 +54,7 @@ import java.util.List;
  */
 public class PanService extends ProfileService {
     private static final String TAG = "PanService";
-    private static final boolean DBG = false;
+    private static final boolean DBG = Utils.isDebug();
     private static PanService sPanService;
 
     private static final String BLUETOOTH_IFACE_ADDR_START = "192.168.44.1";
@@ -287,13 +287,14 @@ public class PanService extends ProfileService {
         }
 
         @Override
-        public void setBluetoothTethering(boolean value) {
+        public void setBluetoothTethering(boolean value, String pkgName) {
             PanService service = getService();
             if (service == null) {
                 return;
             }
-            Log.d(TAG, "setBluetoothTethering: " + value + ", mTetherOn: " + service.mTetherOn);
-            service.setBluetoothTethering(value);
+            Log.d(TAG, "setBluetoothTethering: " + value + ", pkgName: " + pkgName
+                    + ", mTetherOn: " + service.mTetherOn);
+            service.setBluetoothTethering(value, pkgName);
         }
 
         @Override
@@ -362,22 +363,20 @@ public class PanService extends ProfileService {
         return mTetherOn;
     }
 
-    void setBluetoothTethering(boolean value) {
+    void setBluetoothTethering(boolean value, final String pkgName) {
         if (DBG) {
             Log.d(TAG, "setBluetoothTethering: " + value + ", mTetherOn: " + mTetherOn);
         }
         enforceCallingOrSelfPermission(BLUETOOTH_ADMIN_PERM, "Need BLUETOOTH_ADMIN permission");
         final Context context = getBaseContext();
-        String pkgName = context.getOpPackageName();
 
-        // Clear caller identity temporarily so enforceTetherChangePermission UID checks work
-        // correctly
-        final long identityToken = Binder.clearCallingIdentity();
         try {
             ConnectivityManager.enforceTetherChangePermission(context, pkgName);
-        } finally {
-            Binder.restoreCallingIdentity(identityToken);
+        } catch (SecurityException e) {
+            Log.e(TAG, "Stack:" + Log.getStackTraceString(new Throwable()));
+            return;
         }
+        ConnectivityManager.enforceTetherChangePermission(context, pkgName);
 
         UserManager um = (UserManager) getSystemService(Context.USER_SERVICE);
         if (um.hasUserRestriction(UserManager.DISALLOW_CONFIG_TETHERING) && value) {

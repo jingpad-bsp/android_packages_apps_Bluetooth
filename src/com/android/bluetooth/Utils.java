@@ -53,6 +53,7 @@ public final class Utils {
     private static final String TAG = "BluetoothUtils";
     private static final int MICROS_PER_UNIT = 625;
     private static final String PTS_TEST_MODE_PROPERTY = "persist.bluetooth.pts";
+    private static Boolean IS_DEBUG_BUILD = null;
 
     static final int BD_ADDR_LEN = 6; // bytes
     static final int BD_UUID_LEN = 16; // bytes
@@ -491,5 +492,11 @@ public final class Utils {
      */
     public static String getUidPidString() {
         return "uid/pid=" + Binder.getCallingUid() + "/" + Binder.getCallingPid();
+    }
+    public static boolean isDebug() {
+        if (IS_DEBUG_BUILD == null) {
+            IS_DEBUG_BUILD = Build.TYPE.equals("eng") || Build.TYPE.equals("userdebug");
+        }
+        return IS_DEBUG_BUILD;
     }
 }

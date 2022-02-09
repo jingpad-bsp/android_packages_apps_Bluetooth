@@ -110,6 +110,12 @@ public class BluetoothOppSendFileInfo {
         // This will allow more 3rd party applications to share files via
         // bluetooth
         if ("content".equals(scheme)) {
+            if (fromExternal && BluetoothOppUtility.isForbiddenContent(uri)) {
+                EventLog.writeEvent(0x534e4554, "179910660", -1, uri.toString());
+                Log.e(TAG, "Content from forbidden URI is not allowed.");
+                return SEND_FILE_INFO_ERROR;
+            }
+
             contentType = contentResolver.getType(uri);
             Cursor metadataCursor;
             try {
@@ -206,6 +212,8 @@ public class BluetoothOppSendFileInfo {
                 }
             } catch (FileNotFoundException e) {
                 // Ignore
+            } catch (SecurityException e) {
+               Log.e(TAG, e.toString());
             }
         }
 
@@ -223,6 +231,9 @@ public class BluetoothOppSendFileInfo {
             } catch (FileNotFoundException e) {
                 return SEND_FILE_INFO_ERROR;
             } catch (IOException e) {
+                return SEND_FILE_INFO_ERROR;
+            } catch (SecurityException e) {
+                Log.e(TAG, e.toString());
                 return SEND_FILE_INFO_ERROR;
             }
         }
